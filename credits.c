@@ -5,6 +5,10 @@
 #include <linux/fb.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <math.h>
+
+int xResolution;
+int yResolution;
 
 int fbfd = 0;
 struct fb_var_screeninfo vinfo;
@@ -15,1289 +19,294 @@ int x = 0, y = 0;
 int t = 0;
 long int location = 0;
 
-// ALPHABETS
+// Draw point
 
-void drawSpace(int x0, int y0, int d, int c, int b){
-    
+void setPixel(int x, int y, int c1, int c2, int c3) {
+    location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
+            (y+vinfo.yoffset) * finfo.line_length;
+    *(fbp + location) = c1;
+    *(fbp + location + 1) = c2;
+    *(fbp + location + 2) = c3;
 }
 
-void draw3(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
+// Draw line
 
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d/2+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        
-         location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        x++;
-
-        location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-        (y+vinfo.yoffset) * finfo.line_length;
-                        
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
+void bresenhamLow(int x0, int y0, int x1, int y1, int c1, int c2, int c3) {
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+    int yi = 1;
+    if (dy < 0) {
+        yi = -1;
+        dy = -dy;
     }
-
-    x = x0;
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d/2+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        
-        x++;
-
-        location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-        (y+vinfo.yoffset) * finfo.line_length;
-                        
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-    }
-
-}
-
-void drawA(int x0, int y0, int d, int c, int b, int c1, int c2){
-    int y = y0 + b;
-    int mid = x0+d/2;
-    
-    int y_for_mid = y0 + b + d/2;
-    
-    for(int x_for_mid = x0 + d/4; x_for_mid<=(x0 + 3*d/4); x_for_mid++){
-        location = (x_for_mid+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y_for_mid+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-    }
-    
-    for (int x = x0+d/2; x >= x0; x--) {
-        
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+2*(mid-x)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        y++;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+2*(mid-x)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        y++;
-    }
-    
-    y_for_mid = y0 + d/2;
-    for(int x_for_mid = x0 + d/4; x_for_mid<=(x0 + 3*d/4); x_for_mid++){
-        location = (x_for_mid+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y_for_mid+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-    }
-
-    y = y0;
-    for (int x = x0+d/2; x >= x0; x--) {
-        
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-
-        location = (x+2*(mid-x)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-
-        y++;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+2*(mid-x)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        y++;
-    }
-}
-
-void drawB(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d/2+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        
-         location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        x++;
-
-        location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-        (y+vinfo.yoffset) * finfo.line_length;
-                        
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-    }
-
-    x = x0;
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d/2+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        x++;
-
-        location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-        (y+vinfo.yoffset) * finfo.line_length;
-                        
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-    }
-
-}
-
-void drawC(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        x++;
-
-    }
-
-    x = x0;
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        x++;
-
-    }
-
-}
-
-void drawD(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        if (y >= y0 + d/2) {
-            location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+b+vinfo.yoffset) * finfo.line_length;
-                            
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
+    int D = 2*dy - dx;
+    int y = y0;
+    for (int x = x0; x <= x1; x++) {
+        setPixel(x,y,c1,c2,c3);
+        if (D > 0) {
+            y += yi;
+            D -= 2*dx;
         }
+        D += 2*dy;
+    }
+}
 
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        if (x <= x0 + d/2) {
-            location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+vinfo.yoffset) * finfo.line_length;
-                            
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
+void bresenhamHigh(int x0, int y0, int x1, int y1, int c1, int c2, int c3) {
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+    int xi = 1;
+    if (dx < 0) {
+        xi = -1;
+        dx = -dx;
+    }
+    int D = 2*dx - dy;
+    int x = x0;
+    for (int y = y0; y <= y1; y++) {
+        setPixel(x,y,c1,c2,c3);
+        if (D > 0) {
+            x += xi;
+            D -= 2*dy;
         }
-
-        x++;
-
+        D += 2*dx;
     }
-    x = x0 + d/2;
-    for (int y = y0+b; y<= y0 + d/2+b; y++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        x++;
-    }
-
-    x = x0;
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        if (y >= y0 + d/2) {
-            location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        }
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        if (x <= x0 + d/2) {
-            location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        }
-
-        x++;
-
-    }
-
-    x = x0 + d/2;
-    for (int y = y0; y<= y0 + d/2; y++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        
-        x++;
-    }
-
-
 }
 
-void drawE(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-    }
-
-    y = y0 + b; 
-    for (int x = x0; x <= x0+d; x++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+d/3+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-    }
-
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;    }
-
-    for (int x = x0; x <= x0+d; x++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d/3+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;    }
-
-}
-
-void drawI(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0 + d/2;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-    }
-
-    for (int x = x0+d/2-d/4; x <= x0+d/2+d/4; x++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-    }
-
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;    }
-
-    for (int x = x0+d/2-d/4; x <= x0+d/2+d/4; x++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;    }
-}
-
-void drawK(int x0, int y0, int d, int c, int b, int c1, int c2) {
-
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-    }
-
-    y = y0+b;
-    for (int x = x0+d; x >= x0; x--) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d-(y-b-y0)+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        x--;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d-(y-b-y0)+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        y++;
-
-    }
-
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-    }
-
-    y = y0;
-    for (int x = x0+d; x >= x0; x--) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d-(y-y0)+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        x--;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d-(y-y0)+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        y++;
-
-    }
-
-}
-
-void drawL(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        x++;
-
-    }
-
-    x = x0;
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        x++;
-
-    }
-
-}
-
-void drawM(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    int y = y0 + b;
-    for (int x = x0; x <= x0+d/4; x++) {
-        for (int i = 0; i<=3; i++) {
-            location = (x0+d/4-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-            location = (x0+d/2+d/4-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-            location = (x+d/4+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-            location = (x+d/2+d/4+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-            y++;
+void bresenham(int x0, int y0, int x1, int y1, int c1, int c2, int c3) {
+    if (abs(y1 - y0) < abs(x1 - x0)) {
+        if (x0 > x1) {
+            bresenhamLow(x1,y1,x0,y0,c1,c2,c3);
         }
-
-    }
-
-    y = y0;
-    for (int x = x0; x <= x0+d/4; x++) {
-        for (int i = 0; i<=3; i++) {
-            location = (x0+d/4-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-            location = (x0+d/2+d/4-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-            location = (x+d/4+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-            location = (x+d/2+d/4+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-            y++;
+        else {
+            bresenhamLow(x0,y0,x1,y1,c1,c2,c3);
         }
-        
     }
-}
-
-void drawN(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        x++;
-    }
-
-    x = x0;
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        x++;
-    }
-
-}
-
-void drawO(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        x++;
-
-        location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-        (y+vinfo.yoffset) * finfo.line_length;
-                        
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-    }
-
-    x = x0;
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        x++;
-
-       
-        location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-        (y+vinfo.yoffset) * finfo.line_length;
-                        
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-    }
-
-}
-
-void drawP(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d/2+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        x++;
-
-        if (y <= y0+b + d/2) {
-            location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
+    else {
+        if (y0 > y1) {
+            bresenhamHigh(x1,y1,x0,y0,c1,c2,c3);
         }
-
-    }
-
-    x = x0;
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d/2+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        x++;
-
-        if (y <= y0 + d/2) {
-            location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-            *(fbp + location) = c2;
-            *(fbp + location + 1) = c1;
-            *(fbp + location + 2) = c;        
-        }
-
-    }
-
-}
-
-void drawR(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+d/2+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        x++;
-
-        if (y <= y0+b + d/2) {
-            location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-        }
-
-    }
-
-    y = y0+b;
-    for (int x = x0+d; x >= x0; x--) {
-        x--;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d-(y-b-y0)+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        y++;
-
-    }
-
-    x = x0;
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d/2+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        x++;
-
-        if (y <= y0 + d/2) {
-            location = (x0+d+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;        }
-
-    }
-
-    y = y0;
-    for (int x = x0+d; x >= x0; x--) {
-        x--;
-
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+d-(y-y0)+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        y++;
-
-    }
-
-}
-
-void drawT(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    x = x0 + d/2;
-    for (int y = y0+b; y <= y0+d+b; y++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-    }
-
-    for (int x = x0; x <= x0+d; x++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+b+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-    }
-
-    for (int y = y0; y <= y0+d; y++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;    }
-
-    for (int x = x0; x <= x0+d; x++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y0+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-    }
-}
-
-void drawV(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    int y = y0 + b;
-    for (int x = x0; x <= x0+d/2; x++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x0+d-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        y++;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        location = (x0+d-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-        y++;
-    }
-
-    y = y0;
-    for (int x = x0; x <= x0+d/2; x++) {
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x0+d-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        y++;
-        location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        location = (x0+d-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-            (y+vinfo.yoffset) * finfo.line_length;
-                            
-        *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-        y++;
-    }
-}
-
-void drawW(int x0, int y0, int d, int c, int b, int c1, int c2) {
-    int y = y0 + b;
-    for (int x = x0; x <= x0+d/4; x++) {
-        for (int i = 0; i<=3; i++) {
-            location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-            location = (x+d/2+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-            location = (x0+d-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-            location = (x0+d/2-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
-
-            y++;
-        }
-
-    }
-
-    y = y0;
-    for (int x = x0; x <= x0+d/4; x++) {
-        for (int i = 0; i<=3; i++) {
-            location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-            location = (x+d/2+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-            location = (x0+d-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-            location = (x0+d/2-(x-x0)+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                                
-            *(fbp + location) = c2;
-        *(fbp + location + 1) = c1;
-        *(fbp + location + 2) = c;
-            y++;
-        }
-        
-    }
-}
-
-// ERASE
-
-void eraseScreen() {
-    for (int x = 0; x < vinfo.xres-6; x++) {
-        for (int y = 0; y < vinfo.yres-6; y++) {
-            location = (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
-                (y+vinfo.yoffset) * finfo.line_length;
-                            
-            *(fbp + location) = 0;
-        *(fbp + location + 1) = 0;
-        *(fbp + location + 2) = 0;
+        else {
+            bresenhamHigh(x0,y0,x1,y1,c1,c2,c3);
         }
     }
 }
 
-// MAIN
+// Draw shape
 
- int main()
- {
-     // Open the file for reading and writing
-     fbfd = open("/dev/fb0", O_RDWR);
-     if (fbfd == -1) {
-         perror("Error: cannot open framebuffer device");
-         exit(1);
-     }
-     printf("The framebuffer device was opened successfully.\n");
-
-     // Get fixed screen information
-     if (ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) == -1) {
-         perror("Error reading fixed information");
-         exit(2);
-     }
-
-     // Get variable screen information
-     if (ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) == -1) {
-         perror("Error reading variable information");
-         exit(3);
-     }
-
-     printf("%dx%d, %dbpp\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel);
-
-     // Figure out the size of the screen in bytes
-     screensize = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
-
-     // Map the device to memory
-     fbp = (char *)mmap(0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED,
-                        fbfd, 0);
-     if ((int)fbp == -1) {
-         perror("Error: failed to map framebuffer device to memory");
-         exit(4);
-     }
-     printf("The framebuffer device was mapped to memory successfully.\n");
-
-     //x = 300; y = 100;       // Where we are going to put the pixel
-
-     // Figure out where in memory to put the pixel
-     for(t = 0; t<650; t+=1){
-		  drawK(600,650-t,50,255,1,7,168);
-          drawE(660,650-t,50,255,1,7,168);
-          drawL(720,650-t,50,255,1,7,168);
-          drawO(780,650-t,50,255,1,7,168);
-          drawM(840,650-t,50,255,1,7,168);
-          drawP(900,650-t,50,255,1,7,168);
-          drawO(960,650-t,50,255,1,7,168);
-          drawK(1020,650-t,50,255,1,7,168);
-          // drawSpace(1080,650-t,50,209,1,166,180);
-          draw3(1140,650-t,50,255,1,7,168);
-
-          drawT(600,730-t,50,226,1,114,15);
-          drawR(660,730-t,50,226,1,114,15);
-          drawE(720,730-t,50,226,1,114,15);
-          drawV(780,730-t,50,226,1,114,15);
-          drawI(840,730-t,50,226,1,114,15); 
-          drawN(900,730-t,50,226,1,114,15); 
-
-          drawE(600,790-t,50,17,1,187,214);
-          drawD(660,790-t,50,17,1,187,214);
-          drawW(720,790-t,50,17,1,187,214);
-          drawI(780,790-t,50,17,1,187,214);
-          drawN(840,790-t,50,17,1,187,214); 
-          
-          drawA(600,850-t,50,214,1,17,17);
-          drawL(660,850-t,50,214,1,17,17);
-          drawV(720,850-t,50,214,1,17,17);
-          drawI(780,850-t,50,214,1,17,17);
-          drawN(840,850-t,50,214,1,17,17); 
-
-          drawA(600,910-t,50,247,1,232,22);
-          drawL(660,910-t,50,247,1,232,22);
-          drawB(720,910-t,50,247,1,232,22);
-          drawE(780,910-t,50,247,1,232,22);
-          drawR(840,910-t,50,247,1,232,22); 
-          drawT(900,910-t,50,247,1,232,22);
-
-          drawM(1080,730-t,50,82,1,226,15);
-          drawI(1140,730-t,50,82,1,226,15);
-          drawK(1200,730-t,50,82,1,226,15);
-          drawE(1260,730-t,50,82,1,226,15);
-
-          drawC(1080,790-t,50,255,1,255,255);
-          drawL(1140,790-t,50,255,1,255,255);
-          drawE(1200,790-t,50,255,1,255,255);
-          drawM(1260,790-t,50,255,1,255,255);
-          drawE(1320,790-t,50,255,1,255,255); 
-          drawN(1380,790-t,50,255,1,255,255);
-          drawT(1440,790-t,50,255,1,255,255);
-
-          drawK(1080,850-t,50,124,1,10,255);
-          drawE(1140,850-t,50,124,1,10,255);
-          drawV(1200,850-t,50,124,1,10,255);
-          drawI(1260,850-t,50,124,1,10,255);
-          drawN(1320,850-t,50,124,1,10,255); 
-
-          usleep(10000);
+void drawShape(char *fileName, int c1, int c2, int c3) {
+	// Read file
+	FILE *f = fopen(fileName, "r");
+	char c;
+	if (f == NULL) {
+		return;
 	}
-     munmap(fbp, screensize);
-     sleep(5);
-     close(fbfd);
-     return 0;
+	// Read first point
+	int x0 = 0;
+	int y0 = 0;
+	while (c != '(') {
+		c = fgetc(f);
+	}
+	while ((c = fgetc(f)) != ',') {
+		x0 = x0*10 + (c - '0');
+	}
+	while ((c = fgetc(f)) != ')') {
+		y0 = y0*10 + (c - '0');
+	}
+	c = fgetc(f);
+	// Read all another points
+	int x1 = x0;
+	int y1 = y0;
+	int x2 = 0;
+	int y2 = 0;
+	while (c != '}') {
+		while (c != '(') {
+			c = fgetc(f);
+		}
+		while ((c = fgetc(f)) != ',') {
+			x2 = x2*10 + (c - '0');
+		}
+		while ((c = fgetc(f)) != ')') {
+			y2 = y2*10 + (c - '0');
+		}
+		bresenham(x1,y1,x2,y2,c1,c2,c3);
+		x1 = x2;
+		y1 = y2;
+		x2 = 0;
+		y2 = 0;
+		c = fgetc(f);
+	}
+
+	bresenham(x1,y1,x0,y0,c1,c2,c3);
+	fclose(f);
+}
+
+// Flood fill
+
+
+int isSameColor(int x0, int y0, int c11, int c12, int c13) {
+	int loc = (x0+vinfo.xoffset) * (vinfo.bits_per_pixel/8) + 
+            (y0+vinfo.yoffset) * finfo.line_length;
+	int c01 = *(fbp + loc);
+	if (c01 < 0) {
+		c01 += 256;
+	}
+	int c02 = *(fbp + loc + 1);
+	if (c02 < 0) {
+		c02 += 256;
+	}
+	int c03 = *(fbp + loc + 2);
+	if (c03 < 0) {
+		c03 += 256;
+	}
+	return (c01 == c11 && c02 == c12 && c03 == c13);
+}
+
+void floodFill(int x0, int y0, int c1, int c2, int c3) {
+	if (isSameColor(x0,y0,c1,c2,c3)) {
+		return;
+	}
+	else {
+		setPixel(x0,y0,c1,c2,c3);
+		floodFill(x0+1,y0,c1,c2,c3);
+		floodFill(x0-1,y0,c1,c2,c3);
+		floodFill(x0,y0+1,c1,c2,c3);
+		floodFill(x0,y0-1,c1,c2,c3);
+	}
+}
+
+void colorShape(char *fileName, int c1, int c2, int c3) {
+	// Read file
+	FILE *f = fopen(fileName, "r");
+	char c;
+	if (f == NULL) {
+		return;
+	}
+	// Skip points
+	while (c != '}') {
+		c = fgetc(f);
+	}
+	while (c != '{') {
+		c = fgetc(f);
+	}
+	// Read triangles
+	int x0 = 0;
+	int y0 = 0;
+	int x1 = 0;
+	int y1 = 0;
+	int x2 = 0;
+	int y2 = 0;
+	while (c != EOF) {
+		if (c == '{') {
+			// Triangle 1
+			while (c != '(') {
+				c = fgetc(f);
+			}
+			while ((c = fgetc(f)) != ',') {
+				x0 = x0*10 + (c - '0');
+			}
+			while ((c = fgetc(f)) != ')') {
+				y0 = y0*10 + (c - '0');
+			}
+			c = fgetc(f);
+			// Triangle 2
+			while (c != '(') {
+				c = fgetc(f);
+			}
+			while ((c = fgetc(f)) != ',') {
+				x1 = x1*10 + (c - '0');
+			}
+			while ((c = fgetc(f)) != ')') {
+				y1 = y1*10 + (c - '0');
+			}
+			c = fgetc(f);
+			// Triangle 3
+			while (c != '(') {
+				c = fgetc(f);
+			}
+			while ((c = fgetc(f)) != ',') {
+				x2 = x2*10 + (c - '0');
+			}
+			while ((c = fgetc(f)) != ')') {
+				y2 = y2*10 + (c - '0');
+			}
+			c = fgetc(f);
+			// Color
+			bresenham(x0,y0,x1,y1,c1,c2,c3);
+			bresenham(x1,y1,x2,y2,c1,c2,c3);
+			bresenham(x2,y2,x0,y0,c1,c2,c3);
+			int centroidX = round((float)(x0+x1+x2)/(float)3);
+			int centroidY = round((float)(y0+y1+y2)/(float)3);
+			floodFill(centroidX,centroidY,c1,c2,c3);
+			x0 = 0;
+			y0 = 0;
+			x1 = 0;
+			y1 = 0;
+			x2 = 0;
+			y2 = 0;
+		}
+		else {
+			c = fgetc(f);
+		}
+	}
+
+	fclose(f);
+}
+
+// Main
+
+int main(int argc, char **argv) {
+    // Input resolution
+    if (argc != 7) {
+        fprintf(stderr, "Please input filename, resolution, red, green, and blue\n");
+        fprintf(stderr, "Example: %s input.txt 1366 768 255 255 255\n", argv[0]);
+        return -1;
+    }
+    char *fileName = argv[1];
+    xResolution = atoi(argv[2]);
+    yResolution = atoi(argv[3]);
+    int red = atoi(argv[4]);
+    int green = atoi(argv[5]);
+    int blue = atoi(argv[6]);
+
+    // Open the file for reading and writing
+    fbfd = open("/dev/fb0", O_RDWR);
+    if (fbfd == -1) {
+        perror("Error: cannot open framebuffer device");
+        exit(1);
+    }
+    printf("The framebuffer device was opened successfully.\n");
+
+    // Get fixed screen information
+    if (ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) == -1) {
+        perror("Error reading fixed information");
+        exit(2);
+    }
+
+    // Get variable screen information
+    if (ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) == -1) {
+        perror("Error reading variable information");
+        exit(3);
+    }
+
+    printf("%dx%d, %dbpp\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel);
+
+    // Figure out the size of the screen in bytes
+    screensize = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
+
+    // Map the device to memory
+    fbp = (char *)mmap(0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED,
+                        fbfd, 0);
+    if ((long)fbp == -1) {
+        perror("Error: failed to map framebuffer device to memory");
+        exit(4);
+    }
+    printf("The framebuffer device was mapped to memory successfully.\n");
+
+    // Figure out where in memory to put the pixel
+    drawShape(fileName, blue, green, red);
+    colorShape(fileName, blue, green, red);
+
+    munmap(fbp, screensize);
+    sleep(5);
+    close(fbfd);
+    return 0;
  }
